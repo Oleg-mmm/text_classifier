@@ -2,6 +2,8 @@ import torch
 import torch.nn as nn
 from collections import Counter
 from typing import Iterable, List
+import re
+from typing import List
 
 
 PAD_TOKEN = "<pad>"
@@ -51,6 +53,23 @@ class Vocab:
 
     def __contains__(self, token: str) -> bool:
         return token in self.token2id
+    
+    
+_TOKEN_RE = re.compile(r"[A-Za-zА-Яа-я0-9]+(?:'[A-Za-zА-Яа-я]+)?")
+
+
+class Tokenizer:
+    def __init__(self, lowercase: bool = True):
+        self.lowercase = lowercase
+
+    def tokenize(self, text: str) -> List[str]:
+        if self.lowercase:
+            text = text.lower()
+        return _TOKEN_RE.findall(text)
+
+    def __call__(self, text: str) -> List[str]:
+        return self.tokenize(text)    
+
     
 class TextClassifier(nn.Module):
     def __init__(self, vocab_size, num_classes, d_model=128, nhead=4,
