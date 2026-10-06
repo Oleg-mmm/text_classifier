@@ -4,6 +4,9 @@ from collections import Counter
 from typing import Iterable, List
 import re
 from typing import List
+from typing import List, Sequence, Tuple
+from torch.utils.data import Dataset
+from torch.nn.utils.rnn import pad_sequence
 
 
 PAD_TOKEN = "<pad>"
@@ -53,6 +56,36 @@ class Vocab:
 
     def __contains__(self, token: str) -> bool:
         return token in self.token2id
+    
+    
+# ---------------------------------------------------------------------------
+# Dataset
+# ---------------------------------------------------------------------------
+class TextDataset(Dataset):
+    def __init__(
+        self,
+        texts: Sequence[str],
+        labels: Sequence[int],
+        vocab: Vocab,
+        tokenizer: Tokenizer,
+        max_len: int | None = 128,
+    ):
+        assert len(texts) == len(labels), "texts и labels разной длины"
+        self.texts = list(texts)
+        self.labels = list(labels)
+        self.vocab = vocab
+        self.tokenizer = tokenizer
+        self.max_len = max_len
+
+    def __len__(self) -> int:
+        return len(self.texts)
+
+    def __getitem__(self, idx: int) -> Tuple[torch.Tensor, int]:
+        tokens = self.tokenizer(self.texts[idx])
+        if self.max_len is not None:
+            tokens = tokens[: self.max_len]
+        ids = self.vocab.encode(tokens)
+        return torch.tensor(ids, dtype=torch.long), int(self.labels[idx])
     
     
 _TOKEN_RE = re.compile(r"[A-Za-zА-Яа-я0-9]+(?:'[A-Za-zА-Яа-я]+)?")
